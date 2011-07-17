@@ -1,9 +1,6 @@
 googlecheckout.NotificationHandler
 ==================================
 
-Overview
---------
-
 NotificationHandler is simple base class for implementing the Google Checkout Notification API (XML level 2.5) with AppEngine's webapp framework.
 
 Installing the handler
@@ -59,7 +56,7 @@ Example
 -------
 
 As a full example, if we have a simple Order model to store our new order details
-we could then make a notification handler
+we could then make a notification handler to store the order details
 
     from google.appengine.ext import webapp
     from google.appengine.ext.webapp import util
@@ -110,10 +107,9 @@ we could then make a notification handler
             order.paid = True
             order.put()
     
-    # 
     def main():
         routes = [
-            ('/notifications/checkout',             notifications.CheckoutHandler)
+            ('/notifications/checkout', CheckoutHandler)
         ]
         application = webapp.WSGIApplication(routes, debug=True)
         util.run_wsgi_app(application)
