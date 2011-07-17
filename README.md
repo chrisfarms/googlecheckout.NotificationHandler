@@ -1,7 +1,7 @@
 googlecheckout.NotificationHandler
 ==================================
 
-NotificationHandler is simple base class for implementing the Google Checkout Notification API (XML level 2.5) with AppEngine's webapp framework.
+NotificationHandler is simple base class for implementing the [Google Checkout Notification API (XML v2.5)](http://code.google.com/apis/checkout/developer/Google_Checkout_XML_API_Notification_API.html) with AppEngine's [webapp](http://code.google.com/appengine/docs/python/gettingstarted/usingwebapp.html) framework.
 
 Installing the handler
 ----------------------
@@ -13,15 +13,15 @@ Using the handler
 
 Create a webapp handler by subclassing the `NotificationHandler` defining a merchant_details 
 method and overriding any notification methods you wish to use:
+    
+    class MyNotificationHandler(NotificationHandler)
 
-      class MyNotificationHandler(NotificationHandler)
-  
-          def merchant_details():
-              "return a tuple of your merchant details"
-              return (your_id, your_key)
-          
-          def new_order(self):
-              logging.info("got a new order notification", self.notification)
+        def merchant_details():
+            "return a tuple of your merchant details"
+            return (your_id, your_key)
+
+        def new_order(self):
+            logging.info("got a new order notification", self.notification)
 
 By default `NotificationHandler` silently accepts all notifications and leaves a 
 message in the log. It expects that you will override one or more of the following methods
@@ -58,7 +58,7 @@ Example
 As a full example, if we have a simple Order model to store our new order details
 we could then make a notification handler to store the order details
 
-    from google.appengine.ext import webapp
+    from google.appengine.ext import webapp,db
     from google.appengine.ext.webapp import util
     from googlecheckout import NotificationHandler
     
@@ -123,3 +123,8 @@ from google-checkout.
 
 raise `IgnoreNotification` if you wish to raise an exception and also return send an OK acknowledgement to
 google-checkout to prevent re-sending.
+
+Acknowledgements & Author
+-------------------------
+
+This code started life in the [chippyshop source](http://code.google.com/p/chippysshop/source/browse/googlecheckout.py) and was refactored/hacked/extended by Chris Farmiloe into this reusable module.
