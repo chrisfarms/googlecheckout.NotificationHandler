@@ -23,7 +23,7 @@ method and overriding any notification methods you wish to use:
         def new_order(self):
             logging.info("got a new order notification", self.notification)
 
-By default `NotificationHandler` silently accepts all notifications and leaves a 
+By default `NotificationHandler` accepts (and acknowledges) all notifications and leaves a 
 message in the log. It expects that you will override one or more of the following methods
 in your Handler:
   
