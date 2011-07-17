@@ -13,7 +13,8 @@ Using the handler
 
 Create a webapp handler by subclassing the `NotificationHandler` defining a merchant_details 
 method and overriding any notification methods you wish to use:
-    
+
+```python    
     class MyNotificationHandler(NotificationHandler)
 
         def merchant_details():
@@ -22,11 +23,13 @@ method and overriding any notification methods you wish to use:
 
         def new_order(self):
             logging.info("got a new order notification", self.notification)
+```
 
 By default `NotificationHandler` accepts (and acknowledges) all notifications and leaves a 
 message in the log. It expects that you will override one or more of the following methods
 in your Handler:
-  
+
+```python  
       class MyNotificationHandler(NotificationHandler)
       
           new_order(self):
@@ -40,17 +43,20 @@ in your Handler:
 
           def charge_amount(self):
               "Do something with the charge-amount-notification"
+```
 
 Notification Data
 -----------------
 
-Within the context of a NotificationHandler self.notification contains a dict-like object
+Within the context of a NotificationHandler `self.notification` contains a dict-like object
 with all the [notification values](http://code.google.com/apis/checkout/developer/Google_Checkout_XML_API_Notification_API.html#Types_of_Notifications) from the request.
 
-The values in self.notifications are pythonized by converting "-" to "_". So 'order-summary' becomes 'order_summary'
+The values in self.notifications are pythonized by converting `-` to `_`. So 'order-summary' becomes 'order_summary'
 This allows you to access the values via dot-notation. For example:
 
-  self.notification.order_summary.google_order_number # contains the order reference
+```python
+    self.notification.order_summary.google_order_number # contains the order reference
+```
 
 Example
 -------
@@ -58,6 +64,7 @@ Example
 As a full example, if we have a simple Order model to store our new order details
 we could then make a notification handler to store the order details
 
+```python
     from google.appengine.ext import webapp,db
     from google.appengine.ext.webapp import util
     from googlecheckout import NotificationHandler
@@ -115,6 +122,8 @@ we could then make a notification handler to store the order details
         util.run_wsgi_app(application)
     if __name__ == '__main__':
       main()
+```
+
 Notes
 -----
 
