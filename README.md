@@ -62,8 +62,7 @@ As a convineince the structure for fetch the `items` in the `shopping-cart` elem
 
 ```python
     for item in self.notification.shopping_cart.items:
-        # item.name
-        # item.description
+        # item.item_name
         # etc
 ```
 
@@ -98,7 +97,7 @@ we could then make a notification handler to store the order details
             
         def new_order(self):
             "Create an order for the incoming order notification"
-            # first check if we already created this order (maybe the notification can in twice
+            # first check if we already created this order (maybe the notification came in twice)
             order = models.Order.all().get_by_key_name(self.notification.google_order_number)
             if order:
                 return
