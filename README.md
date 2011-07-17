@@ -32,7 +32,7 @@ in your Handler:
 ```python  
       class MyNotificationHandler(NotificationHandler)
       
-          new_order(self):
+          def new_order(self):
               "Do something with the new-order-notification"
 
           def risk_information(self):
