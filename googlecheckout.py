@@ -13,7 +13,10 @@ class DotDict(dict):
     @property
     def items(self):
         """more convient items access"""
-        return self['items'].get('item',[])
+        items_list = self['items'].get('item',[])
+        if not isinstance(items_list, list):
+            items_list = [items_list]
+        return items_list
     __setattr__= dict.__setitem__
     __delattr__= dict.__delitem__
     
@@ -216,6 +219,15 @@ class NotificationHandler(webapp.RequestHandler):
 
     def charge_amount(self):
         self.unhandled_notification()
+        
+    def chargeback_amount(self):
+        self.unhandled_notification()
+        
+    def refund_amount(self):
+        self.unhandled_notification()
+        
+    def authorization_amount(self):
+        self.unhandled_notification()
 
     def unhandled_notification(self):
         raise IgnoreNotification("GoogleNotification: %s received but ignored" %  self.notification_type)
@@ -230,6 +242,12 @@ class NotificationHandler(webapp.RequestHandler):
             self.order_state_change()
         elif self.notification_type == 'charge-amount-notification':
             self.charge_amount()
+        elif self.notification_type == 'authorization-amount-notification':
+            self.authorization_amount()
+        elif self.notification_type == 'refund-amount-notification':
+            self.refund_amount()
+        elif self.notification_type == 'chargeback-amount-notification':
+            self.chargeback_amount()
         else: #all other notifications are ignored    
             self.unhandled_notification()
             

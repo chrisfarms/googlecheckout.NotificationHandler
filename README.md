@@ -43,6 +43,15 @@ in your Handler:
 
           def charge_amount(self):
               "Do something with the charge-amount-notification"
+              
+          def chargeback_amount(self):
+              "Chargeback info..."
+
+          def refund_amount(self):
+              "Refund info..."
+
+          def authorization_amount(self):
+              "Auth details..."
 ```
 
 Notification Data
