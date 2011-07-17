@@ -58,6 +58,15 @@ This allows you to access the values via dot-notation. For example:
     self.notification.order_summary.google_order_number # contains the order reference
 ```
 
+As a convineince the structure for fetch the `items` in the `shopping-cart` elements has been shortend slightly from the XML version. To iterate each item you can do:
+
+```python
+    for item in self.notification.shopping_cart.items:
+        # item.name
+        # item.description
+        # etc
+```
+
 Example
 -------
 
