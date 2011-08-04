@@ -127,7 +127,7 @@ we could then make a notification handler to store the order details
 
         def charge_amount(self):
             "Mark a previous order as paid"
-            order = Order.all().get_by_key_name(self.notification.google_order_number)
+            order = Order.get_by_key_name(self.notification.google_order_number)
             order.paid = True
             order.put()
     
