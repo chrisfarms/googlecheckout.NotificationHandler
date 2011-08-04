@@ -107,7 +107,7 @@ we could then make a notification handler to store the order details
         def new_order(self):
             "Create an order for the incoming order notification"
             # first check if we already created this order (maybe the notification came in twice)
-            order = Order.all().get_by_key_name(self.notification.google_order_number)
+            order = Order.get_by_key_name(self.notification.google_order_number)
             if order:
                 return
             # otherwise create an order
