@@ -172,8 +172,8 @@ You can use the Order Processing methods without the NotificationHandler by sett
 
 ```python
     import googlecheckout
-    CheckoutOrder = googlecheckout.Client(merchant_id='173973879346743',
-        merchant_key='ZyCw_bR5A5rIkOkum-tyVQ', 
+    CheckoutOrder = googlecheckout.Client(merchant_id='171973829346743',
+        merchant_key='ZyCwRxR5AZrIkOkumZtyVQ', 
         sandbox=True, 
         currency="GBP")
 
