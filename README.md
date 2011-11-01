@@ -148,7 +148,7 @@ Cancelling/Shipping and Interacting via Order Processing API
 
 `remote_order` returns an instance of googlecheckout.Order for the current order.
 
-For example if you wanted to automatically ship all orders under $10 and instantly cancel all orders over $50 you might do something like:
+For example if you wanted to automatically ship all orders under $3000 and instantly cancel all orders over $50 you might do something like:
 
 ```python
     class MyNotificationHandler(NotificationHandler):
@@ -180,17 +180,18 @@ You can use the Order Processing methods without the NotificationHandler by sett
     # init order class with order-number
     order = CheckoutOrder('859558483052501')
 
-    # authorize an order
+    # (re)authorize an order
     order.authorize()
 
-    # charge and ship
-    order.charge_and_ship() 
+    # charge/ship order and log 
+    # an optional shipping carrier 
+    order.charge_and_ship(carrier="FEDEX", carrier_id="123456") 
 
     # refund an order with reason and optional amount
     order.refund("it's all squishy", amount=10)
 
     # cancel the order
-    order.cancel()
+    order.cancel(reason="customer sounds dodgey")
 ```
 
 Notes
