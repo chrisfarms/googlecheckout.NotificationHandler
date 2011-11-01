@@ -91,10 +91,10 @@ we could then make a notification handler to store the order details
         paid = db.StringProperty()
         name = db.StringProperty()
         email = db.StringProperty()
-        address_line_1 = StringProperty()
-        city = StringProperty()
-        postcode = StringProperty()
-        phone = StringProperty()
+        address_line_1 = db.StringProperty()
+        city = db.StringProperty()
+        postcode = db.StringProperty()
+        phone = db.StringProperty()
         items = db.StringListProperty()
 
     class CheckoutHandler(NotificationHandler):
@@ -141,10 +141,38 @@ we could then make a notification handler to store the order details
       main()
 ```
 
+Cancelling/Shipping and Interacting via Order Processing API
+------------------------------------------------------------
+
+**[Experimental]** A few of the [Financial Commands](http://code.google.com/apis/checkout/developer/Google_Checkout_XML_API_Financial_Commands.html#Overview) from the [Order Processing API](http://code.google.com/apis/checkout/developer/Google_Checkout_XML_API_Processing.html#order_processing_api) are exposed via the `remote_order` method on the handler. 
+
+`remote_order` returns an instance of googlecheckout.Order for the current order.
+
+For example if you wanted to automatically ship all orders under $10 and instantly cancel all orders over $50 you might do something like:
+
+```python
+    class MyNotificationHandler(NotificationHandler):
+        "An example notifcation handler"
+
+        def merchant_details():
+            "return a tuple of your merchant details"
+            return ("12345678910", "Axoiuyfq2309230f9u2gf")
+                
+        def new_order(self):
+            total = float(self.notificaiton.order.total)
+            if total < 10:
+                self.remote_order.charge_and_ship(self.notificaiton.order_total)
+            elif total > 3000:
+                self.remote_order.cancel()
+```
+
+`remote_order` calls will raise an exception if they fail so you will probably want to wrap them in `try`/`catch` to handle them correctly
+
+
 Notes
 -----
 
-any exceptions raised during execution of the notification will result in the notification being resent
+Exceptions raised during execution of the notification will result in the notification being resent
 from google-checkout.
 
 raise `IgnoreNotification` if you wish to raise an exception and also return send an OK acknowledgement to

@@ -1,7 +1,14 @@
 import base64
-from google.appengine.ext import webapp
+try:
+    from google.appengine.ext import webapp
+except:
+    class webapp():
+        pass
+    webapp.RequestHandler = object
 import logging
 from xml.dom import minidom, Node
+from xml.dom.minidom import getDOMImplementation,parseString
+import httplib
 
 class DotDict(dict):
     """A dot-accessable dict-like object for accessing the checkout XML"""
@@ -115,7 +122,7 @@ class NotificationHandler(webapp.RequestHandler):
             phone = StringProperty()
             items = db.StringListProperty()
 
-        class MyNotificationHandler(notification_handler('your-merchant-id','your-merchant-key')):
+        class MyNotificationHandler(NotificationHandler):
             "An example notifcation handle"
 
             def merchant_details():
@@ -173,6 +180,8 @@ class NotificationHandler(webapp.RequestHandler):
         except KeyError:
             logging.error("GoogleNotification: notification body did not contain a serial-number field")
             raise
+        # create a RemoteOrder (for interacting with Order Processing API)
+        self.remote_order = self._remote_order()
         
     def _handshake(self):
         "Acknowledge receipt of notification."
@@ -207,6 +216,37 @@ class NotificationHandler(webapp.RequestHandler):
             return self.error(400)
         # everything looks ok
         return True
+
+    def _remote_order(self):
+        """
+        returns an instance of the googlecheckout.Client Order for the
+        currently related order notification. 
+
+        You should not need to call this method directly and use the property
+        self.remote_order insted
+        
+        You can use this to interact with the checkout orders via the 
+        Order Processing API
+
+        For example if you wanted to automatically ship all orders under $10
+        but instantly cancel all orders over $50 you might do something like:
+
+            class MyNotificationHandler(NotificationHandler):
+                "An example notifcation handle"
+
+                def merchant_details():
+                    "return a tuple of your merchant details"
+                    return ("12345678910", "Axoiuyfq2309230f9u2gf")
+                
+                def new_order(self):
+                    if int(self.notification.order_total) < 10:
+                        self.remote_order.charge_and_ship(self.notificaiton.order_total)
+                    elif int(self.notificaiton.order_total) > 3000:
+                        self.remote_order.cancel()
+        """
+        mid,mkey = self.merchant_details()
+        RemoteOrder = googlecheckout.Client(mid,mkey)
+        return RemoteOrder(self.notificaiton.google_order_number)
 
     def new_order(self):
         self.unhandled_notification()
@@ -266,3 +306,183 @@ class NotificationHandler(webapp.RequestHandler):
             # methods raise this by default
             logging.info(str(e))
         self._handshake()
+    
+
+
+# order processing api: 
+
+def Client(merchant_id, merchant_key, sandbox=False, currency="USD"):
+    """
+    googlecheckout.Client returns a class for interacting with google
+    checkout orders via the Order Processing API
+     
+    to use it, import and configure the order processing client like:
+    
+        import googlecheckout
+        CheckoutOrder = googlecheckout.Client(merchant_id='173973879346743',
+                                          merchant_key='ZyCw_bR5A5rIkOkum-tyVQ', 
+                                          sandbox=True, 
+                                          currency="GBP")
+    then later somewhere in your code:
+
+        # create an instance of the order class by passing an order number 
+        order = CheckoutOrder('312149228575666')
+
+        # charge and ship it
+        order.charge_and_ship(123.23, "ups", "1234-tracker-abc")
+
+    """
+    
+    class Order(object):
+        def __init__(self, order_number):
+            self.merchant_id = merchant_id
+            self.merchant_key = merchant_key
+            self.order_number = order_number
+            self.currency = currency
+        
+        def _request(self, xml):
+            headers = {
+                "Content-type": "application/xml; charset=UTF-8",
+                "Accept": "application/xml; charset=UTF-8",
+                "Authorization": self._authorization()}
+            if sandbox:
+                conn = httplib.HTTPSConnection("sandbox.google.com")
+                conn.request("POST", "/checkout/api/checkout/v2/request/Merchant/"+self.merchant_id, xml, headers)
+            else:
+                conn = httplib.HTTPSConnection("checkout.google.com")
+                conn.request("POST", "/api/checkout/v2/request/Merchant/"+self.merchant_id, xml, headers)
+            response = conn.getresponse()
+            body = response.read()
+            doc = parseString(body).documentElement
+            # handle error responses by raising them as exceptions
+            if response.status != 200:
+                errs = doc.getElementsByTagName("error-message")
+                errmsg = ""
+                for e in errs:
+                    errmsg += e.firstChild.data.encode("ascii", "ignore") + " "
+                raise Exception("google checkout: " + errmsg)
+            return doc
+    
+        def _authorization(self):
+            return "Basic " + base64.b64encode(self.merchant_id + ":" + self.merchant_key)
+        
+        def _doc(self, tag):
+            doc = getDOMImplementation().createDocument(None, tag, None)
+            # set ns
+            doc.documentElement.setAttribute("xmlns", "http://checkout.google.com/schema/2")
+            # set order id
+            doc.documentElement.setAttribute("google-order-number", self.order_number)
+            return doc
+
+        def authorize(self):
+            """
+            instructs Google Checkout to explicitly reauthorize a customer's 
+            credit card for the uncharged balance of an order to verify that 
+            funds for the order are available. You may issue an authorize command 
+            for an order that is in either CHARGEABLE or CHARGED states (You could 
+            reauthorize an order that had been partially charged.)
+            """
+            # WARNING: you may be charged $0.30 for this call 
+            doc = self._doc("authorize-order")
+            # send xml msg to google checkout
+            self._request( doc.toxml("utf-8") )
+            
+        def cancel(self, reason="no reason given", comment=""):
+            """
+            instructs Google Checkout to cancel a particular order. If the customer
+            has already been charged, you must refund the customer's money before you 
+            can cancel the order. You may only issue a "cancel" command for an order that 
+            is in either CHARGEABLE or PAYMENT_DECLINED state
+            """
+            doc = self._doc("cancel-order")
+            # set reason
+            el = doc.createElement("reason")
+            el.appendChild( doc.createTextNode(str(reason)) )
+            doc.documentElement.appendChild(el)
+            # set comment
+            if comment:
+                el = doc.createElement("comment")
+                el.appendChild( doc.createTextNode(str(comment)) )
+                doc.documentElement.appendChild(el)
+            # send xml msg to google checkout
+            self._request( doc.toxml("utf-8") )
+            
+        def refund(self, reason, amount=None, comment=""):
+            """
+            instructs Google Checkout to refund the buyer for a particular order. 
+            You may issue a "refund" for orders in CHARGED state.
+            """
+            doc = self._doc("refund-order")
+            # set amount to refund
+            if amount is not None:
+                el = doc.createElement("amount")
+                el.setAttribute("currency", self.currency)
+                el.appendChild( doc.createTextNode(str(amount)) )
+                doc.documentElement.appendChild(el)
+            # set reason
+            el = doc.createElement("reason")
+            el.appendChild( doc.createTextNode(str(reason)) )
+            doc.documentElement.appendChild(el)
+            # set comment
+            if comment:
+                el = doc.createElement("comment")
+                el.appendChild( doc.createTextNode(str(comment)) )
+                doc.documentElement.appendChild(el)
+            # send xml msg to google checkout
+            self._request( doc.toxml("utf-8") )
+            
+        def charge_and_ship(self, amount=None, carrier=None, carrier_id=None):
+            """
+            instructs Google Checkout to charge the buyer for a particular
+            order. After an order reaches the CHARGEABLE order state, you have seven
+            days (168 hours) to capture funds by issuing a <charge-and-ship-order>
+            command. You may issue a <charge-and-ship-order> command for orders 
+            that are in CHARGEABLE or CHARGED (if the order has only been partially charged)
+            states
+            """
+            doc = self._doc("charge-and-ship-order")
+            # set amount to charge (or leave blank for full)
+            if amount is not None:
+                el = doc.createElement("amount")
+                el.setAttribute("currency", self.currency)
+                el.appendChild( doc.createTextNode(str(amount)) )
+                doc.documentElement.appendChild(el)
+            # set tracking data (if given) 
+            if carrier is not None or carrier_id is not None:
+                tel = doc.createElement("tracking-data")
+                # set carrier (if given)
+                if carrier is not None:
+                    cel = doc.createElement("carrier")
+                    cel.appendChild( doc.createTextNode(carrier) )
+                    tel.appendChild(cel)
+                # set tracking id if given along with carrier
+                if carrier_id is not None:
+                    nel = doc.createElement("tracking-number")
+                    nel.appendChild( doc.createTextNode(carrier_id) )
+                    tel.appendChild(nel)
+                # add item to list
+                el = doc.createElement("tracking-data-list")
+                el.appendChild(tel)
+                doc.documentElement.appendChild(el)
+            # send xml msg to google checkout
+            self._request( doc.toxml("utf-8") )
+            
+    return Order
+
+
+
+    
+
+CheckoutOrder = Client(merchant_id='173973879346743',
+                        merchant_key='ZyCw_bR5A5rIkOkum-tyVQ', 
+                        sandbox=True, 
+                        currency="GBP")
+
+# create an instance of the order class by passing an order number 
+order = CheckoutOrder('312149228575666')
+
+# charge and ship it
+order.charge_and_ship(123.23, "ups", "1234-tracker-abc")
+order.refund("it's all squishy", amount=1)
+order.cancel()
+order.authorize()
