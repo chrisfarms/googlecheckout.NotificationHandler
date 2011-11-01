@@ -132,11 +132,11 @@ class NotificationHandler(webapp.RequestHandler):
             def new_order(self):
                 "Create an order for the incoming order notification"
                 # first check if we already created this order (maybe the notification can in twice
-                order = models.Order.all().get_by_key_name(self.notification.google_order_number)
+                order = Order.all().get_by_key_name(self.notification.google_order_number)
                 if order:
                     return
                 # otherwise create an order
-                order = models.Order(
+                order = Order(
                     key_name       = self.notification.google_order_number,
                     name           = self.notification.buyer_shipping_address.contact_name,
                     email          = self.notification.buyer_shipping_address.email,
@@ -152,7 +152,7 @@ class NotificationHandler(webapp.RequestHandler):
 
             def charge_amount(self):
                 "Mark a previous order as paid"
-                order = models.Order.all().get_by_key_name(self.notification.google_order_number)
+                order = Order.all().get_by_key_name(self.notification.google_order_number)
                 order.paid = True
                 order.put()
 
