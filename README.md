@@ -166,8 +166,32 @@ For example if you wanted to automatically ship all orders under $10 and instant
                 self.remote_order.cancel()
 ```
 
-`remote_order` calls will raise an exception if they fail so you will probably want to wrap them in `try`/`catch` to handle them correctly
+`remote_order` calls will raise an exception if they fail so you will probably want to wrap them in `try`/`catch` to handle them correctly.
 
+You can use the Order Processing methods without the NotificationHandler by setting up the order class:
+
+```python
+    import googlecheckout
+    CheckoutOrder = googlecheckout.Client(merchant_id='173973879346743',
+        merchant_key='ZyCw_bR5A5rIkOkum-tyVQ', 
+        sandbox=True, 
+        currency="GBP")
+
+    # init order class with order-number
+    order = CheckoutOrder('859558483052501')
+
+    # authorize an order
+    order.authorize()
+
+    # charge and ship
+    order.charge_and_ship() 
+
+    # refund an order with reason and optional amount
+    order.refund("it's all squishy", amount=10)
+
+    # cancel the order
+    order.cancel()
+```
 
 Notes
 -----
