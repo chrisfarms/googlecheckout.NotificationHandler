@@ -65,7 +65,7 @@ class Error(Exception):
 
 class IgnoreNotification(Error):
     """Base class for exceptions raised to ackknowledge 
-    by not do anything with a notificaiton"""
+    by not do anything with a notification"""
     
 def get_list_from_value(notification_value):
     "Checks to see if value in notification dict is a list or unicode. Returns list of value(s) as integers."
@@ -249,12 +249,16 @@ class NotificationHandler(webapp.RequestHandler):
                 
                 def new_order(self):
                     if int(self.notification.order_total) < 10:
-                        self.remote_order.charge_and_ship(self.notificaiton.order_total)
-                    elif int(self.notificaiton.order_total) > 3000:
+                        self.remote_order.charge_and_ship(self.notification.order_total)
+                    elif int(self.notification.order_total) > 3000:
                         self.remote_order.cancel()
         """
         mid,mkey = self.merchant_details()
-        RemoteOrder = Client(mid,mkey)
+        try:
+            cur = self.notification.order_summary.order_total_currency
+        except AttributeError:
+            cur = None
+        RemoteOrder = Client(mid, mkey, currency=cur if cur else "USD")
         return RemoteOrder(self.notification.google_order_number)
 
     def new_order(self):
