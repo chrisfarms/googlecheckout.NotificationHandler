@@ -472,17 +472,15 @@ def Client(merchant_id, merchant_key, sandbox=False, currency="USD"):
 
 
     
-
-CheckoutOrder = Client(merchant_id='173973879346743',
-                        merchant_key='ZyCw_bR5A5rIkOkum-tyVQ', 
-                        sandbox=True, 
-                        currency="GBP")
-
-# create an instance of the order class by passing an order number 
-order = CheckoutOrder('312149228575666')
-
-# charge and ship it
-order.charge_and_ship(123.23, "ups", "1234-tracker-abc")
-order.refund("it's all squishy", amount=1)
-order.cancel()
-order.authorize()
+def quick_test():
+    CheckoutOrder = Client(merchant_id='173973879346743',
+        merchant_key='ZyCw_bR5A5rIkOkum-tyVQ', 
+        sandbox=True, 
+        currency="GBP")
+    # create an instance of the order class by passing an order number 
+    order = CheckoutOrder('859558483052501')
+    # charge and ship it
+    order.authorize()
+    order.charge_and_ship()
+    order.refund("it's all squishy", amount=1)
+    order.cancel()
