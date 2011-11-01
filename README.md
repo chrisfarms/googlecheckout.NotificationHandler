@@ -148,7 +148,7 @@ Cancelling/Shipping and Interacting via Order Processing API
 
 `remote_order` returns an instance of googlecheckout.Order for the current order.
 
-For example if you wanted to automatically ship all orders under $3000 and instantly cancel all orders over $50 you might do something like:
+For example if you wanted to automatically ship all orders under $10 and instantly cancel all orders over $3000 you might do something like:
 
 ```python
     class MyNotificationHandler(NotificationHandler):
