@@ -1,14 +1,17 @@
 import base64
+import logging
+from xml.dom import minidom, Node
+from xml.dom.minidom import getDOMImplementation,parseString
+import httplib
+
+# ignore load error of appengine for tests
 try:
     from google.appengine.ext import webapp
 except:
     class webapp():
         pass
     webapp.RequestHandler = object
-import logging
-from xml.dom import minidom, Node
-from xml.dom.minidom import getDOMImplementation,parseString
-import httplib
+    
 
 class DotDict(dict):
     """A dot-accessable dict-like object for accessing the checkout XML"""
@@ -45,6 +48,12 @@ def node_to_dotdict(self):
                     d[name] = [d[name], value]
             else:
                 d[name] = value
+            # special case for currency attribute
+            # currency is prettymuch the only attribute
+            # used. it is converted into TAGNAME_ATTRNAME
+            cur = node.getAttribute("currency")
+            if cur:
+                d[name+"_currency"] = cur
     return d
 
 def xml_to_dotdict(xmlstr):
@@ -245,8 +254,8 @@ class NotificationHandler(webapp.RequestHandler):
                         self.remote_order.cancel()
         """
         mid,mkey = self.merchant_details()
-        RemoteOrder = googlecheckout.Client(mid,mkey)
-        return RemoteOrder(self.notificaiton.google_order_number)
+        RemoteOrder = Client(mid,mkey)
+        return RemoteOrder(self.notification.google_order_number)
 
     def new_order(self):
         self.unhandled_notification()
@@ -468,6 +477,5 @@ def Client(merchant_id, merchant_key, sandbox=False, currency="USD"):
             self._request( doc.toxml("utf-8") )
             
     return Order
-
 
 
